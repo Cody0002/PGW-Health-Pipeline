@@ -1,0 +1,5 @@
+pandas
+pyarrow
+google-cloud-bigquery
+google-auth
+papermill
