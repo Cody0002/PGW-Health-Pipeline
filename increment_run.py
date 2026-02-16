@@ -97,17 +97,21 @@ WITH
             m.account_group,
             m.group_re,
 
-            DATETIME(f.createdAt, CASE f.reqCurrency
-                WHEN 'BDT' THEN '+06:00'
-                WHEN 'THB' THEN 'Asia/Bangkok'
-                WHEN 'MXN' THEN 'America/Mexico_City'
-                WHEN 'IDR' THEN 'Asia/Jakarta'
-                WHEN 'BRL' THEN 'America/Sao_Paulo'
-                WHEN 'PKR' THEN 'Asia/Karachi'
-                WHEN 'INR' THEN '+05:30'
-                WHEN 'PHP' THEN 'Asia/Manila'
-                ELSE 'UTC'
-            END) AS local_ts,
+            DATETIME(f.createdAt, 
+                CASE LEFT(f.reqCurrency,2)
+                    WHEN 'BD' THEN '+06:00'
+                    WHEN 'TH' THEN 'Asia/Bangkok'
+                    WHEN 'MX' THEN 'America/Mexico_City'
+                    WHEN 'ID' THEN 'Asia/Jakarta'
+                    WHEN 'BR' THEN 'America/Sao_Paulo'
+                    WHEN 'PK' THEN 'Asia/Karachi'
+                    WHEN 'IN' THEN '+05:30'
+                    WHEN 'PH' THEN 'Asia/Manila'
+                    WHEN 'CO' THEN 'America/Bogota'
+                    WHEN 'EG' THEN 'Africa/Cairo'
+                    ELSE 'UTC'
+                END
+            ) AS local_ts,
             
             CASE 
                 WHEN f.status = 'completed' AND f.type = 'deposit' THEN
@@ -123,7 +127,6 @@ WITH
             -- Note: Ensure this date matches your intended full reporting window
             f.insertedAt > @watermark 
             AND f.type IN ('deposit', 'withdraw')
-            AND f.reqCurrency IN ('BDT', 'THB', 'MXN', 'IDR', 'BRL', 'PKR', 'INR', 'PHP')
             AND f.status IN ('completed', 'errors', 'timeout', 'error')
         QUALIFY ROW_NUMBER() OVER (PARTITION BY f.id ORDER BY f.insertedAt DESC) = 1
     ),
@@ -251,15 +254,17 @@ WITH
         t.reqCurrency,
         t.account_group,
         t.group_re,
-        CASE t.reqCurrency
-            WHEN 'BDT' THEN 'Bangladesh'
-            WHEN 'THB' THEN 'Thailand'
-            WHEN 'MXN' THEN 'Mexico'
-            WHEN 'IDR' THEN 'Indonesia'
-            WHEN 'BRL' THEN 'Brazil'
-            WHEN 'PKR' THEN 'Pakistan'
-            WHEN 'INR' THEN 'India'
-            WHEN 'PHP' THEN 'Philippines'
+        CASE LEFT(t.reqCurrency,2)
+            WHEN 'BD' THEN 'Bangladesh'
+            WHEN 'TH' THEN 'Thailand'
+            WHEN 'MX' THEN 'Mexico'
+            WHEN 'ID' THEN 'Indonesia'
+            WHEN 'BR' THEN 'Brazil'
+            WHEN 'PK' THEN 'Pakistan'
+            WHEN 'IN' THEN 'India'
+            WHEN 'PH' THEN 'Philippines'
+            WHEN 'CO' THEN 'Colombia'
+            WHEN 'EG' THEN 'Egypt'
             ELSE 'Other'
         END AS Country,
         t.status_formatted AS status,
