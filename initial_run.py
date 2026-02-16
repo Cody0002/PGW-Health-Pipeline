@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from google.cloud import bigquery
 from google.oauth2.service_account import Credentials
+from google.cloud import bigquery_storage
 
 # --- CONFIGURATION ---
 PARQUET_FILENAME = 'daily_funding.parquet' 
@@ -19,9 +20,12 @@ def clean_google_dtypes(df):
     return df
 
 def run_full_load():
-    client = bigquery.Client()
+    client = bigquery.Client(project="kz-dp-prod")
 
     print("Executing FULL historical query (Baseline Load)...")
+
+    # Create the storage client explicitly
+    bqstorage_client = bigquery_storage.BigQueryReadClient()
     
     # ... [Keep your existing SQL query exactly as is] ...
     sql_query = """
@@ -85,7 +89,7 @@ WITH
         LEFT JOIN brand_mapping m ON UPPER(a.name) = UPPER(m.brand)
         WHERE 
             -- Note: Ensure this date matches your intended full reporting window
-            DATE(f.insertedAt) >= '2025-11-01' 
+            DATE(f.insertedAt) >= '2025-12-01' 
             AND f.type IN ('deposit', 'withdraw')
             AND f.reqCurrency IN ('BDT', 'THB', 'MXN', 'IDR', 'BRL', 'PKR', 'INR', 'PHP')
             AND f.status IN ('completed', 'errors', 'timeout', 'error')
@@ -257,12 +261,13 @@ WITH
         1,2,3,4,5,6,7,8,9,10,11,16,25,26,27
     """
 
-    df = client.query(sql_query).to_dataframe()
+    df = client.query(sql_query).to_dataframe(bqstorage_client=bqstorage_client)
 
     if df.empty:
         print("Query returned 0 rows.")
         return
-
+    else:
+        print(f"Query returned {df.shape[0]} rows.")
     # --- KEY FIX: Normalize Types ---
     df = clean_google_dtypes(df)
     

@@ -51,7 +51,7 @@ def run_incremental_update():
     watermark = get_watermark(PARQUET_FILENAME)
     print(f"Checking for data inserted after: {watermark}")
 
-    client = bigquery.Client()
+    client = bigquery.Client(project="kz-dp-prod")
 
     # 2. Configure Query Parameters (Security Best Practice)
     job_config = bigquery.QueryJobConfig(
